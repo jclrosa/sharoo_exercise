@@ -1,4 +1,5 @@
 class UsersController < ApplicationController
+  skip_before_action :validate_user
 
   def create
     @user = User.new(user_params)

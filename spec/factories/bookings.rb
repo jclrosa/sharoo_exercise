@@ -1,4 +1,5 @@
 FactoryGirl.define do
+
   factory :booking do
     vehicle_id 1
     start_at { DateTime.now }

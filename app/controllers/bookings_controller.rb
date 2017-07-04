@@ -23,7 +23,9 @@ class BookingsController < ApplicationController
     #Just part of the bookings could be made
     elsif result_bookings[:saved].count > 0 && result_bookings[:not_saved].count > 0 &&
           result_bookings[:saved].count != result_bookings[:iterator].count
-      render status: 207, json: { multistatus: result_bookings[:saved] + result_bookings[:not_saved] , response: "Some bookings were not possible to be done"}
+      multi_result = result_bookings[:saved] + result_bookings[:not_saved]
+
+      render status: 207, json: { multistatus: multi_result, response: "Some bookings were not possible to be done"}
 
     #The booking is not possible because there are bookings for the same time period
     elsif result_bookings[:saved].count == 0 && result_bookings[:not_saved].count == result_bookings[:iterator].count
@@ -86,9 +88,9 @@ private
 
     booking_iterator.each do |book_param|
       booking = Booking.new(book_param)
-      #Verifies if the desired booking for the logged in user can be done
-
       booking.user = current_user
+
+      #Verifies if the desired booking for the logged in user can be done
       if booking.valid?
         booking.save
         bookings_saved.push({status: 200, id: booking.id })

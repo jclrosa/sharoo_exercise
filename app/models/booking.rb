@@ -18,6 +18,7 @@ class Booking < ApplicationRecord
     end
   end
 
+  #Verify if the booking overlaps any other booking in the system
   def overlaps_timeframe?
     overlap_query = "bookings.start_at <= ? AND bookings.end_at > ? OR " +
                     "bookings.start_at < ? AND bookings.end_at >= ? "
