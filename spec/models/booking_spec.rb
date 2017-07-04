@@ -8,8 +8,8 @@ RSpec.describe Booking, type: :model do
   describe "when making a booking and inserting a valid start date and end date" do
     it "should create a booking for the specified period" do
 
-      start_at = Date.today + 2.days
-      end_at = Date.today + 5.days
+      start_at = DateTime.now + 2.days
+      end_at = DateTime.now + 5.days
 
       vehicle_booking = create(:booking, start_at: start_at, end_at: end_at)
 
@@ -20,8 +20,8 @@ RSpec.describe Booking, type: :model do
   describe "when making a booking and inserting a start date after an end date" do
     it "should not create a booking for the specified period" do
 
-      start_at = Date.today + 7.days
-      end_at = Date.today + 5.days
+      start_at = DateTime.now + 7.days
+      end_at = DateTime.now + 5.days
 
       vehicle_booking = build(:booking, start_at: start_at, end_at: end_at)
 
