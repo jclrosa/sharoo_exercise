@@ -3,6 +3,8 @@ class Booking < ApplicationRecord
 
   validates :end_at, presence: true
   validates :start_at, presence: true
+  validates :vehicle_id, presence: true
+  validates :user_id, presence: true
 
   validate :end_at_after_start_at?
 
