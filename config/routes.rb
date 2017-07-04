@@ -1,7 +1,11 @@
 Rails.application.routes.draw do
   # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
 
-  resources :users
-  resources :sessions
-  resources :bookings
+  resources :users, only: [:create]
+  resources :sessions, only: [:create]
+  resources :bookings, only: [:create, :show, :index] do
+    member do
+      post :start
+    end
+  end
 end
