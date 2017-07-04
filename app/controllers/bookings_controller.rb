@@ -1,80 +1,61 @@
 class BookingsController < ApplicationController
-  skip_before_action :verify_authenticity_token
-  before_action :authenticate_user
   before_action :set_booking, only: [:show, :start]
 
   #List of a logged in user bookings
   def index
-    if @logged_in_user.present?
-      if @logged_in_user.bookings.count > 0
-        render status: 200, json: { bookings: @logged_in_user.bookings}
-      else
-        render status: 200, json: { bookings: [], response: "User does not have any bookings yet"}
-      end
+    if current_user.bookings.count > 0
+      render status: 200, json: { bookings: current_user.bookings}
     else
-      render status: 401, json: { response: "Invalid access_token"}
+      render status: 200, json: { bookings: [], response: "User does not have any bookings yet"}
     end
   end
 
   #When assigning a set of bookings to be created, it will insert only the ones that
   #are possible to be made. The not poossible bookings will be sent in the request response
   def create
-    #Just allow to create bookings if authenticated
-    if @logged_in_user.present?
-      result_bookings = verify_booking_bookability
+    result_bookings = verify_booking_bookability
 
-      #All bookings are successfully made
-      if result_bookings[:iterator].count > 0 && result_bookings[:saved].count == result_bookings[:iterator].count
-        render status: 200, json: { response: "Booking Vehicle created successfully",
-                                    bookings: result_bookings[:saved] }
+    #All bookings are successfully made
+    if result_bookings[:iterator].count > 0 && result_bookings[:saved].count == result_bookings[:iterator].count
+      render status: 200, json: { response: "Booking Vehicle created successfully",
+                                  bookings: result_bookings[:bookings_list] }
 
-      #Just part of the bookings could be made
-      elsif result_bookings[:saved].count > 0 && result_bookings[:not_saved].count > 0 &&
-            result_bookings[:saved].count != result_bookings[:iterator].count
-        render status: 200, json: { impossible_bookings: result_bookings[:not_saved] , response: "Some bookings were not possible to be done"}
+    #Just part of the bookings could be made
+    elsif result_bookings[:saved].count > 0 && result_bookings[:not_saved].count > 0 &&
+          result_bookings[:saved].count != result_bookings[:iterator].count
+      render status: 207, json: { multistatus: result_bookings[:saved] + result_bookings[:not_saved] , response: "Some bookings were not possible to be done"}
 
-      #The booking is not possible because there are bookings for the same time period
-      elsif result_bookings[:saved].count == 0 && result_bookings[:not_saved].count == result_bookings[:iterator].count
-        render status: 403, json: { response: "There are Vehicle Bookings for the requested period"}
-      end
-    else
-      render status: 401, json: { response: "Invalid access_token"}
+    #The booking is not possible because there are bookings for the same time period
+    elsif result_bookings[:saved].count == 0 && result_bookings[:not_saved].count == result_bookings[:iterator].count
+      render status: 409, json: { response: "There are already Vehicle Bookings for the requested period"}
     end
   end
 
   def show
-    if @logged_in_user.present?
-      if @booking.present? && @booking.user == @logged_in_user
-        render status: 200, json: { booking: @booking }
-      elsif @booking.present? && @booking.user != @logged_in_user
-        render status: 401, json: { response: "This booking is not yours, you don't have permissions to access it" }
-      else
-        render status: 404, json: { response: "The specified booking does not exist" }
-      end
+    if @booking.present? && @booking.user == current_user
+      render status: 200, json: { booking: @booking }
+    elsif @booking.present? && @booking.user != current_user
+      render status: 401, json: { response: "This booking is not yours, you don't have permissions to access it" }
     else
-      render status: 401, json: { response: "Invalid access_token"}
+      render status: 404, json: { response: "The specified booking does not exist" }
     end
   end
 
   def start
-    #Just allow to start bookings if authenticated
-    if @logged_in_user.present?
-      # Here I not defined any specific date time rule for a user to be able to start a booking.
-      # I will just permit for a user to start future bookings.
-      if @booking.present? && @booking.user == @logged_in_user &&
-              DateTime.now <= @booking.start_at && @booking.status.scheduled?
+    # Here I not defined any specific date time rule for a user to be able to start a booking.
+    # I will just permit for a user to start future bookings.
 
-        @booking.update_attributes(status: "started")
-        render status: 200, json: { booking: @booking, response: "Booking successfully started" }
-      elsif @booking.present? && @booking.user != @logged_in_user
+    if @booking.present? && @booking.user == current_user &&
+            DateTime.now.to_date <= @booking.start_at.to_date && @booking.scheduled?
 
-        render status: 401, json: { response: "This booking is not yours, you don't have permissions to access it" }
-      else
+      @booking.update_attributes(status: "started")
+      render status: 200, json: { booking: @booking, response: "Booking successfully started" }
+    elsif @booking.present? && @booking.user != current_user
 
-        render status: 404, json: { response: "The specified booking does not exist" }
-      end
+      render status: 401, json: { response: "This booking is not yours, you don't have permissions to access it" }
     else
-      render status: 401, json: { response: "Invalid access_token"}
+
+      render status: 404, json: { response: "The specified booking does not exist" }
     end
   end
 
@@ -92,32 +73,31 @@ private
     params.require(:bookings).map{ |book| book.permit(:vehicle_id, :start_at, :end_at) }
   end
 
-  def authenticate_user
-    @logged_in_user = User.find_by_access_token(request.headers['Authorization'])
-  end
-
   def verify_booking_bookability
-    #store the list of created bookings
-      bookings_saved = []
-      #store the list of not created bookings
-      bookings_not_saved = []
+    #store the list of created bookings in json format
+    bookings_saved = []
+    #store the list of not created bookings in json format
+    bookings_not_saved = []
+    #store the list of bookings created
+    bookings_list = []
 
-      #store the params of a booking/bookings a logged in user wants to make
-      booking_iterator = (params[:bookings].present? ? bookings_array_params : [booking_params] )
+    #store the params of a booking/bookings a logged in user wants to make
+    booking_iterator = (params[:bookings].present? ? bookings_array_params : [booking_params] )
 
-      booking_iterator.each do |book_param|
-        booking = Booking.new(book_param)
-        #Verifies if the desired booking for the logged in user can be done
-        is_overlap = Bookings::BookingValidator.new(booking).overlaps_timeframe?
+    booking_iterator.each do |book_param|
+      booking = Booking.new(book_param)
+      #Verifies if the desired booking for the logged in user can be done
 
-        if !is_overlap
-          booking.user = @logged_in_user
-          booking.save
-          bookings_saved.push(booking)
-        else
-          bookings_not_saved.push(booking)
-        end
+      booking.user = current_user
+      if booking.valid?
+        booking.save
+        bookings_saved.push({status: 200, id: booking.id })
+        bookings_list.push(booking)
+      else
+        bookings_not_saved.push({status: 409, errors: booking.errors })
       end
-      { iterator: booking_iterator, saved: bookings_saved, not_saved: bookings_not_saved }
+    end
+    { iterator: booking_iterator, bookings_list: bookings_list,
+      saved: bookings_saved, not_saved: bookings_not_saved }
   end
 end

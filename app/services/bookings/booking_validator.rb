@@ -5,14 +5,13 @@ class Bookings::BookingValidator
   end
 
   def overlaps_timeframe?
+    overlap_query = "bookings.start_at <= ? AND bookings.end_at > ? OR " +
+                    "bookings.start_at < ? AND bookings.end_at >= ? "
     vehicle_bookings = Booking.where(vehicle_id: @booking.vehicle_id)
-
-    return false if !vehicle_bookings.present?
-
-    return true if vehicle_bookings.any? {|book| (@booking.start_at >= book.start_at && @booking.start_at < book.end_at ) ||
-                                                 (@booking.end_at > book.start_at && @booking.end_at <= book.end_at )}
-
-    false
+                              .where(overlap_query, @booking.start_at, @booking.start_at, @booking.end_at, @booking.end_at)
+                              .exists?
+    return false if !vehicle_bookings
+    true
   end
 
 end

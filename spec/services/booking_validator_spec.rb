@@ -22,7 +22,7 @@ RSpec.describe Bookings::BookingValidator do
     expect(validator_result).to eq(false)
   end
 
-  it "should allow to make a booking(same vehicle)  that ends exactly in the minute before another booking starts" do
+  it "should allow to make a booking(same vehicle) that ends exactly in the minute before another booking starts" do
     user = create(:user)
     booking_after = create(:booking, vehicle_id: 1,
                                        user: user,
@@ -38,7 +38,7 @@ RSpec.describe Bookings::BookingValidator do
     expect(validator_result).to eq(false)
   end
 
-  it "should allow to make a booking(same vehicle)  that starts exactly in the minute after another booking ends" do
+  it "should allow to make a booking(same vehicle) that starts exactly in the minute after another booking ends" do
     user = create(:user)
     booking_before = create(:booking, vehicle_id: 1,
                                        user: user,
