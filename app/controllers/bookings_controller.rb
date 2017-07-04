@@ -55,7 +55,7 @@ private
   end
 
   def authenticate_user
-    @logged_in_user = User.find_by_access_token(params[:access_token])
+    @logged_in_user = User.find_by_access_token(request.headers['Authorization'])
   end
 
   def verify_booking_bookability

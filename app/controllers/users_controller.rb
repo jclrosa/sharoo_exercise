@@ -5,7 +5,7 @@ class UsersController < ApplicationController
     @user = User.new(user_params)
 
     if @user.save
-
+      #define a random access-token for the registrated user
       random_access_token = SecureRandom.hex
       @user.update_attributes(access_token: random_access_token)
 
