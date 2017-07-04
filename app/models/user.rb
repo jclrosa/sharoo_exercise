@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  has_many :bookings
 
   #Guarantee user email format
   validates :email, format: /@/
