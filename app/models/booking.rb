@@ -20,10 +20,12 @@ class Booking < ApplicationRecord
 
   #Verify if the booking overlaps any other booking in the system
   def overlaps_timeframe?
-    overlap_query = "bookings.start_at <= ? AND bookings.end_at > ? OR " +
-                    "bookings.start_at < ? AND bookings.end_at >= ? "
+    overlap_query = "bookings.start_at >= :start_date AND bookings.start_at <= :end_date OR " +
+                    "bookings.end_at >= :start_date AND bookings.end_at <= :end_date OR " +
+                    "bookings.start_at <= :start_date AND bookings.end_at >= :end_date"
+
     vehicle_bookings = Booking.where(vehicle_id: vehicle_id)
-                              .where(overlap_query, start_at, start_at, end_at, end_at)
+                              .where(overlap_query, start_date: start_at, end_date: end_at)
                               .exists?
     if vehicle_bookings
       errors.add :start_at, "already exist a vehicle booking to the same period "

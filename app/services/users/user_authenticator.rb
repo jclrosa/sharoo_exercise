@@ -1,13 +1,14 @@
 class Users::UserAuthenticator
 
-  def initialize(user)
-    @user = user
+  def initialize(email, password)
+    @user = User.where(email: email).first
+    @password = password
   end
 
-  def authenticate(unencrypted_password)
+  def authenticate
     return false unless @user
 
-    if @user.password == unencrypted_password
+    if @user.password == @password
       @user
     else
       false

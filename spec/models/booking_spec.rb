@@ -118,6 +118,22 @@ RSpec.describe Booking, type: :model do
     end
   end
 
+  describe "when making a booking(same vehicle) that is partially inside another booking, in terms of period" do
+    it "should not allow to create it" do
+      booking_before = create(:booking, vehicle_id: 1,
+                                         user: @user,
+                                         start_at: DateTime.tomorrow.beginning_of_day + 11.days,
+                                         end_at: DateTime.tomorrow.end_of_day + 16.days )
+
+      booking = build(:booking, vehicle_id: 1,
+                                 user: @user,
+                                 start_at: DateTime.tomorrow.beginning_of_day + 8.days,
+                                 end_at: DateTime.tomorrow.beginning_of_day + 18.days )
+
+      expect(booking.valid?).to eq(false)
+    end
+  end
+
   describe "when making a booking that overlaps another user booking, but they are for different vehicles" do
     it "should allow to create it" do
       booking_before = create(:booking, vehicle_id: 2,
